@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 
 SYMMETRY_BLOCKS = True
 INCLUDE_SOC = True
@@ -109,32 +108,33 @@ def apply_SOC(H):
 
     return HH + H_SO
 
-def apply_SC(H):
+def apply_SC(H, SC_Delta1, SC_Delta2, SC_Delta3, SC_Delta4):
     H_SC = np.zeros((44,44), dtype='complex')
 
-    H += np.identity(np.shape(H)[0])*1.3 # On-site addition
     H_SC[:22, :22] = H
     H_SC[22:, 22:] = -np.conj(H)
 
-    d1 = 0.01
-    d2 = 0.01
-    d3 = 0.01
-    #d1 = 0
-    #d2 = 0
-    #d3 = 0
+    d1 = SC_Delta1 #  singlet pairing in the d_z^2
+    d2 = SC_Delta2 # singlet pairing in the in-plane orbitals (d_x^2−y^2 and d_xy)
+    d3 = SC_Delta3 # inter-orbital triplet which pairs the two in-plane orbitals
+    d4 = SC_Delta4
     Delta = np.zeros(np.shape(H), dtype='complex')
     Delta[0,11] = d1
     Delta[1,12] = d2
     Delta[2,13] = d2
-    Delta[1,13] = 1j*d3
-    Delta[2,12] = -1j*d3
+    Delta[1,13] = -1j*d3
+    Delta[2,12] = 1j*d3
+    Delta[0,2] = d4
+    Delta[0,1] = 1j*d4
+    Delta[11,13] = d4
+    Delta[11,12] = -1j*d4
     Delta = Delta - Delta.T
 
     H_SC[:22, 22:] = Delta
     H_SC[22:, :22] = np.conj(Delta).T
     return H_SC
 
-def Hamilton_MoS2(k):
+def Hamilton_MoS2(k, SC_Delta1=0, SC_Delta2=0, SC_Delta3=0, SC_Delta4=0, E0=1.3):
     HHH = np.zeros((11,11),dtype='complex')
     
     # Reduced momentum variables
@@ -238,5 +238,6 @@ def Hamilton_MoS2(k):
     if INCLUDE_SOC:
         HHH = apply_SOC(HHH)
     if INCLUDE_SC:
-        HHH =apply_SC(HHH)
+        HHH += np.identity(np.shape(HHH)[0])*E0 # On-site addition
+        HHH = apply_SC(HHH, SC_Delta1, SC_Delta2, SC_Delta3, SC_Delta4)
     return HHH

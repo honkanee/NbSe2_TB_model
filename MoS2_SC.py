@@ -1,9 +1,16 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from Hamilton_NbSe2 import Hamilton_MoS2
+from NbSe2_Fermi_surface import BZ_corners
 
 INCLUDE_SOC = True
 INCLUDE_SC = True
+
+
+Delta1 = 0.01
+Delta2 = 0.01
+Delta3 = 0.01
+Delta4 = 0.01
 
 def main():
     
@@ -18,7 +25,7 @@ def main():
     K_M_dist = np.linalg.norm(K-M)
     dist_sum = K_dist+M_dist+K_M_dist
 
-    N = 2000
+    N = 5000
     Gamma_M = np.linspace(Gamma, M, round(N*M_dist/dist_sum))
     M_K = np.linspace(M,K,round(N*K_M_dist/dist_sum))
     K_Gamma = np.linspace(K,Gamma,round(N*K_dist/dist_sum))
@@ -35,14 +42,13 @@ def main():
     eta = 0.01
     for i in range(np.shape(k_values)[0]):
         k = k_values[i]
-        H = Hamilton_MoS2(k)
+        H = Hamilton_MoS2(k, Delta1, Delta2, Delta3, Delta4)
         E, c = np.linalg.eigh(H)
 
         E_values[i] = E
         cs[i] = c
 
         cumulative_H += np.abs(H)
-
 
 
     # Bands
@@ -55,11 +61,15 @@ def main():
     plt.ylabel("E [eV]")
     plt.axvline(x=round(N*M_dist/dist_sum), color='black', linestyle='--')
     plt.axvline(x=round(N*(K_M_dist+M_dist)/dist_sum), color='black', linestyle='--')
-    plt.ylim(-2,2.5)
+    #plt.ylim(-2,2.5)
     plt.axhline()
 
+    print(k_values[315])
+    print(k_values[947])
+    print(k_values[1316])
+
     # Spectrums
-    if True:
+    if False:
         Es = np.linspace(-1,1,500)
         orbitals = np.array([[2, 35], [1, 34], [0, 33]])
         txt = [r"e $d_{z^2 \uparrow}$", r"e $d_{x^2 \uparrow}$", r"e $d_{xy \uparrow}$", r"e $p_{x,S \uparrow}$", r"e $p_{y,S \uparrow}$", r"e $p_{z,A \uparrow}$", r"e $p_{d_{xz} \uparrow}$", r"e $d_{yz \uparrow}$", r"e $p{x,A \uparrow}$", r"e $p_{y,A \uparrow}$", r"e $p_{z,S \uparrow}$",
@@ -139,8 +149,12 @@ def main():
         plt.tight_layout()
 
     plt.figure()
+    plt.plot(BZ_corners()[:,0],BZ_corners()[:,1], "k-")
     plt.plot(k_values[:,0], k_values[:,1])
-
+    plt.scatter(k_values[315,0], k_values[315,1], marker='o')
+    plt.scatter(k_values[947,0], k_values[947,1], marker='o')
+    plt.scatter(k_values[1316,0], k_values[1316,1], marker='o')
+    plt.gca().set_aspect('equal')
     plt.show()
     return
 

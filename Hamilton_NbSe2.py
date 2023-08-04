@@ -1,3 +1,7 @@
+"""
+Implementation of TB Hamiltonian for MoS2 and NbSe2 including SOC and SC
+"""
+
 import numpy as np
 
 SYMMETRY_BLOCKS = True
@@ -30,6 +34,12 @@ lambda_SO_M = 0.075
 lambda_SO_S = 0.052
 
 def base_switch(H):
+    """
+    Base switch from orginal base 
+    [p_{x,t}, p_{y,t}, p_{z,t}, d_{3z^2-r^2}, d_{x^2-y^2}, d_{xy}, d_{xz}, d_{yz}, p_{x,b}, p_{y,b}, p_{z,b}]
+    to "even-odd" base
+    [d_{3z^2-r^2}, d_{x^2-y^2}, d_{xy}, p_{x,S}, p_{y,S}, p_{z,A}, d_{xz}, d_{yz}, p_{x,A}, p_{y,A}, p_{z,S}]
+    """
     a = 1/np.sqrt(2)
     P = np.array([[0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
                   [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
@@ -108,33 +118,48 @@ def apply_SOC(H):
 
     return HH + H_SO
 
-def apply_SC(H, SC_Delta1, SC_Delta2, SC_Delta3, SC_Delta4):
+def apply_SC(H, SC_Delta1, SC_Delta2, SC_Delta3, SC_Delta4, Delta_M):
     H_SC = np.zeros((44,44), dtype='complex')
 
     H_SC[:22, :22] = H
     H_SC[22:, 22:] = -np.conj(H)
+    Delta = None
 
-    d1 = SC_Delta1 #  singlet pairing in the d_z^2
-    d2 = SC_Delta2 # singlet pairing in the in-plane orbitals (d_x^2−y^2 and d_xy)
-    d3 = SC_Delta3 # inter-orbital triplet which pairs the two in-plane orbitals
-    d4 = SC_Delta4
-    Delta = np.zeros(np.shape(H), dtype='complex')
-    Delta[0,11] = d1
-    Delta[1,12] = d2
-    Delta[2,13] = d2
-    Delta[1,13] = -1j*d3
-    Delta[2,12] = 1j*d3
-    Delta[0,2] = d4
-    Delta[0,1] = 1j*d4
-    Delta[11,13] = d4
-    Delta[11,12] = -1j*d4
-    Delta = Delta - Delta.T
+    if Delta_M is None:
+        d1 = SC_Delta1
+        d2 = SC_Delta2
+        d3 = SC_Delta3
+        d4 = SC_Delta4
+        Delta = np.zeros(np.shape(H), dtype='complex')
+        Delta[0,11] = d1
+        Delta[1,12] = d2
+        Delta[2,13] = d2
+        Delta[1,13] = -1j*d3
+        Delta[2,12] = 1j*d3
+        Delta[0,2] = d4
+        Delta[0,1] = 1j*d4
+        Delta[11,13] = d4
+        Delta[11,12] = -1j*d4
+        Delta = Delta - Delta.T
+    else:
+        Delta = Delta_M
 
     H_SC[:22, 22:] = Delta
     H_SC[22:, :22] = np.conj(Delta).T
     return H_SC
 
-def Hamilton_MoS2(k, SC_Delta1=0, SC_Delta2=0, SC_Delta3=0, SC_Delta4=0, E0=1.3):
+def Hamilton_MoS2(k, SC_Delta1=0, SC_Delta2=0, SC_Delta3=0, SC_Delta4=0, E0=1.3, Delta_M=None):
+    """
+    k : two-dimensional momentum vector [k_x, k_y] (np.array)
+    SC_Delta1 : singlet pairing in the d_z^2
+    SC_Delta2 : singlet pairing in the in-plane orbitals (d_x^2-y^2 and d_xy)
+    SC_Delta3 : inter-orbital triplet which pairs the two in-plane orbitals
+    SC_Delta4 : another inter-orbital triplet term which notably pairs states of the same spin
+    E0 : On-site energy addition to MoS2 model. 1.3 eV used for NbSe2
+    Delta_M : Ready-made SC Delta matrix
+
+    returns : 44x44 Hamiltonian matrix (np.array)
+    """
     HHH = np.zeros((11,11),dtype='complex')
     
     # Reduced momentum variables
@@ -239,5 +264,5 @@ def Hamilton_MoS2(k, SC_Delta1=0, SC_Delta2=0, SC_Delta3=0, SC_Delta4=0, E0=1.3)
         HHH = apply_SOC(HHH)
     if INCLUDE_SC:
         HHH += np.identity(np.shape(HHH)[0])*E0 # On-site addition
-        HHH = apply_SC(HHH, SC_Delta1, SC_Delta2, SC_Delta3, SC_Delta4)
+        HHH = apply_SC(HHH, SC_Delta1, SC_Delta2, SC_Delta3, SC_Delta4, Delta_M)
     return HHH

@@ -1,15 +1,20 @@
+"""
+Script for calculating and plotting densities of states at Fermi surface
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 from Hamilton_NbSe2 import Hamilton_MoS2
 import os
 
-N = 3000
-E0 = 0
-eta = 0.001
+N = 3000 # Grid size
+E0 = 0 # Energy level
+eta = 0.001 # eta for calculation of Green's function
 
-SC_Delta1 = 0.01 #  singlet pairing in the d_z^2
+SC_Delta1 = 0.01 # singlet pairing in the d_z^2
 SC_Delta2 = 0.01 # singlet pairing in the in-plane orbitals (d_x^2−y^2 and d_xy)
 SC_Delta3 = 0.01 # inter-orbital triplet which pairs the two in-plane orbitals
+SC_Delta4 = 0.01 # another inter-orbital triplet term
 
 def color_spins_RGB(up,down):
     G = np.min(np.array([up.T,down.T]),axis=0)
@@ -34,148 +39,161 @@ def BZ_corners():
 
 def main():
 
-    print(" N = {:} \n eta = {:} \n Delta1 = {:} \n Delta2 = {:} \n Delta3 = {:}".format(N, eta, SC_Delta1, SC_Delta2, SC_Delta3))
+    print(" N = {:} \n eta = {:} \n Delta1 = {:} \n Delta2 = {:} \n Delta3 = {:} \n Delta4 = {:}".format(N, eta, SC_Delta1, SC_Delta2, SC_Delta3, SC_Delta4))
 
-    gaps = np.array([0, -0.037, 0.037, -0.055, 0.55])
-    for E0 in gaps:
-        print(E0)
-        kx = np.linspace(-2*np.pi,2*np.pi,N)
-        ky = kx
 
-        DOS_e = np.zeros((N,N))
-        DOS_e_up = np.zeros((N,N))
-        DOS_e_down = np.zeros((N,N))
+    kx = np.linspace(-2*np.pi,2*np.pi,N)
+    ky = kx
 
-        F_z2 = np.zeros((N,N), dtype='complex')
-        F_x2 = np.zeros((N,N), dtype='complex')
-        F_xy = np.zeros((N,N), dtype='complex')
+    DOS_eh = np.zeros((N,N))
+    DOS_e = np.zeros((N,N))
+    DOS_e_up = np.zeros((N,N))
+    DOS_e_down = np.zeros((N,N))
 
-        F_z2_uu = np.zeros((N,N), dtype='complex')
-        F_x2_uu = np.zeros((N,N), dtype='complex')
-        F_xy_uu = np.zeros((N,N), dtype='complex')
+    F_z2 = np.zeros((N,N), dtype='complex')
+    F_x2 = np.zeros((N,N), dtype='complex')
+    F_xy = np.zeros((N,N), dtype='complex')
 
-        for i in range(N):
-            for j in range(N):
-                H = Hamilton_MoS2((kx[i], ky[j]), SC_Delta1, SC_Delta2, SC_Delta3)
-                E, c = np.linalg.eigh(H)
+    F_z2_uu = np.zeros((N,N), dtype='complex')
+    F_x2_uu = np.zeros((N,N), dtype='complex')
+    F_xy_uu = np.zeros((N,N), dtype='complex')
 
-                DOS_e[i,j] = np.imag(-1/np.pi*np.sum(np.sum(c[:22,:]*np.conj(c[:22,:]),0)/(E0-E+1j*eta)))
-                DOS_e_up[i,j] = np.imag(-1/np.pi*np.sum(np.sum(c[:11,:]*np.conj(c[:11,:]),0)/(E0-E+1j*eta)))
-                DOS_e_down[i,j] = np.imag(-1/np.pi*np.sum(np.sum(c[11:22,:]*np.conj(c[11:22,:]),0)/(E0-E+1j*eta)))
+    for i in range(N):
+        for j in range(N):
+            H = Hamilton_MoS2((kx[i], ky[j]), SC_Delta1, SC_Delta2, SC_Delta3)
+            E, c = np.linalg.eigh(H)
 
-                F_z2[i,j] = -1/np.pi*np.sum(c[0,:]*np.conj(c[33,:])/(E0-E+1j*eta))#-1/np.pi*np.sum(c[11,:]*np.conj(c[22,:])/(E0-E+1j*eta))
-                F_x2[i,j] = -1/np.pi*np.sum(c[1,:]*np.conj(c[34,:])/(E0-E+1j*eta))#-1/np.pi*np.sum(c[12,:]*np.conj(c[23,:])/(E0-E+1j*eta))
-                F_xy[i,j] = -1/np.pi*np.sum(c[2,:]*np.conj(c[35,:])/(E0-E+1j*eta))#-1/np.pi*np.sum(c[13,:]*np.conj(c[24,:])/(E0-E+1j*eta))
+            DOS_eh[i,j] = np.imag(-1/np.pi*np.sum(np.sum(c[:,:]*np.conj(c[:,:]),0)/(E0-E+1j*eta)))
 
-                F_z2_uu[i,j] = -1/np.pi*np.sum(c[0,:]*np.conj(c[33,:])/(E0-E+1j*eta))
-                F_x2_uu[i,j] = -1/np.pi*np.sum(c[1,:]*np.conj(c[34,:])/(E0-E+1j*eta))
-                F_xy_uu[i,j] = -1/np.pi*np.sum(c[2,:]*np.conj(c[35,:])/(E0-E+1j*eta))
-                
-            if i%100 == 0:
-                print('%.0f'% (100*i/N))
+            DOS_e[i,j] = np.imag(-1/np.pi*np.sum(np.sum(c[:22,:]*np.conj(c[:22,:]),0)/(E0-E+1j*eta)))
+            DOS_e_up[i,j] = np.imag(-1/np.pi*np.sum(np.sum(c[:11,:]*np.conj(c[:11,:]),0)/(E0-E+1j*eta)))
+            DOS_e_down[i,j] = np.imag(-1/np.pi*np.sum(np.sum(c[11:22,:]*np.conj(c[11:22,:]),0)/(E0-E+1j*eta)))
 
-        X,Y = np.meshgrid(kx,ky)
-        corners = BZ_corners()
+            F_z2[i,j] = -1/np.pi*np.sum(c[0,:]*np.conj(c[33,:])/(E0-E+1j*eta))#-1/np.pi*np.sum(c[11,:]*np.conj(c[22,:])/(E0-E+1j*eta))
+            F_x2[i,j] = -1/np.pi*np.sum(c[1,:]*np.conj(c[34,:])/(E0-E+1j*eta))#-1/np.pi*np.sum(c[12,:]*np.conj(c[23,:])/(E0-E+1j*eta))
+            F_xy[i,j] = -1/np.pi*np.sum(c[2,:]*np.conj(c[35,:])/(E0-E+1j*eta))#-1/np.pi*np.sum(c[13,:]*np.conj(c[24,:])/(E0-E+1j*eta))
 
-        dirname = "./kuvat/surf_E{0}meV".format(np.round(E0*1000))
-        if not os.path.exists(dirname):
-            os.makedirs(dirname)
+            F_z2_uu[i,j] = -1/np.pi*np.sum(c[0,:]*np.conj(c[22,:])/(E0-E+1j*eta))
+            F_x2_uu[i,j] = -1/np.pi*np.sum(c[1,:]*np.conj(c[23,:])/(E0-E+1j*eta))
+            F_xy_uu[i,j] = -1/np.pi*np.sum(c[2,:]*np.conj(c[24,:])/(E0-E+1j*eta))
+            
+        if i%100 == 0:
+            print('%.0f'% (100*i/N))
 
-        plt.figure()
-        plt.plot(corners[:,0], corners[:,1], 'k')
-        plt.pcolormesh(X,Y, DOS_e.T)
+    X,Y = np.meshgrid(kx,ky)
+    corners = BZ_corners()
+
+    dirname = "./kuvat/surf_E{0}meV".format(np.round(E0*1000))
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+
+    plt.figure()
+    plt.plot(corners[:,0], corners[:,1], 'k')
+    plt.pcolormesh(X,Y, DOS_e.T)
+    plt.gca().set_aspect('equal')
+    plt.xlabel("$k_x$")
+    plt.ylabel("$k_y$")
+    plt.title("Fermipinta, tilatiheys")
+
+    textstr = '\n'.join((
+    r'$E=%.0f$ meV' % (E0 * 1000),
+    r'$\Delta_1=%.0f$ meV' % (SC_Delta1*1000, ),
+    r'$\Delta_2=%.0f$ meV' % (SC_Delta2*1000, ),
+    r'$\Delta_3=%.0f$ meV' % (SC_Delta3*1000, ),
+    r'$\Delta_4=%.0f$ meV' % (SC_Delta4*1000)))
+
+    ax = plt.gca()
+    # these are matplotlib.patch.Patch properties
+    props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+    # place a text box in upper left in axes coords
+    ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=14,
+        verticalalignment='top', bbox=props)
+    
+    fig = plt.gcf()
+    fig.set_size_inches(8, 8)
+    fig.savefig(dirname+"/surf_dos_d1-{:n}_d2-{:n}_d3-{:n}_d4-{:n}_eta-{:n}.png".format(SC_Delta1*1e3, SC_Delta2*1e3, SC_Delta3*1e3, SC_Delta4*1e3, 1/eta), dpi=200)
+
+
+    plt.figure()
+    plt.plot(corners[:,0], corners[:,1], 'k')
+    plt.pcolormesh(X,Y, DOS_eh.T)
+    plt.gca().set_aspect('equal')
+    plt.xlabel("$k_x$")
+    plt.ylabel("$k_y$")
+    plt.title("Fermipinta, tilatiheys (elektronit ja aukot)")
+
+    fig = plt.gcf()
+    fig.set_size_inches(8, 8)
+    fig.savefig(dirname+"/surf_dos_eh_d1-{:n}_d2-{:n}_d3-{:n}_d4-{:n}_eta-{:n}.png".format(SC_Delta1*1e3, SC_Delta2*1e3, SC_Delta3*1e3, SC_Delta4*1e3, 1/eta), dpi=200)
+
+    plt.figure()
+    plt.plot(corners[:,0], corners[:,1], 'k')
+    plt.pcolormesh(X,Y, np.abs(DOS_e_up.T), cmap='Blues')
+    plt.gca().set_aspect('equal')
+    plt.colorbar()
+    plt.xlabel("$k_x$")
+    plt.ylabel("$k_y$")
+    plt.title(r"Fermi surface, electron $\uparrow$ density")
+
+    plt.figure()
+    plt.imshow(color_spins_RGB(DOS_e_down, DOS_e_up))
+    plt.plot(N*(2*np.pi+corners[:,0])/(4*np.pi), N*(2*np.pi+corners[:,1])/(4*np.pi), 'w')
+    plt.title("Fermipinta, spinit")
+
+    fig = plt.gcf()
+    fig.set_size_inches(8, 8)
+    plt.gca().text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=14,
+    verticalalignment='top', bbox=props)
+    fig.savefig(dirname+"/surf_spins_d1-{:n}_d2-{:n}_d3-{:n}_d4-{:n}_eta-{:n}.png".format(SC_Delta1*1e3, SC_Delta2*1e3, SC_Delta3*1e3, SC_Delta4*1e3, 1/eta), dpi=200)
+
+    fig = plt.figure()
+    F = [F_z2_uu,F_x2_uu,F_xy_uu]
+    max_F_imag = np.max(np.imag(F))
+    max_F_real = np.max(np.real(F))
+    txt = [r"$F_{z^2\uparrow, z^2\uparrow}$", r"$F_{x^2-y^2\uparrow, x^2-y^2\uparrow}$", r"$F_{xy\uparrow, xy\uparrow}$"]
+    for i in range(3):
+        plt.subplot(2,3,i+1)
+        plt.pcolormesh(X,Y, np.abs(np.imag(F[i])).T, vmin=0, vmax=max_F_imag)
         plt.gca().set_aspect('equal')
-        plt.xlabel("$k_x$")
-        plt.ylabel("$k_y$")
-        plt.title("Fermipinta, tilatiheys")
-
-        textstr = '\n'.join((
-        r'$E=%.0f$ meV' % (E0 * 1000),
-        r'$\Delta_1=%.0f$ meV' % (SC_Delta1*1000, ),
-        r'$\Delta_2=%.0f$ meV' % (SC_Delta2*1000, ),
-        r'$\Delta_3=%.0f$ meV' % (SC_Delta3*1000)))
-
-        ax = plt.gca()
-        # these are matplotlib.patch.Patch properties
-        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        # place a text box in upper left in axes coords
-        ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=14,
-            verticalalignment='top', bbox=props)
-        
-        fig = plt.gcf()
-        fig.set_size_inches(8, 8)
-        fig.savefig(dirname+"/surf_dos_d1-{:n}_d2-{:n}_d3-{:n}_eta-{:n}.png".format(SC_Delta1*1e3, SC_Delta2*1e3, SC_Delta3*1e3, 1/eta), dpi=200)
-
-        plt.figure()
-        plt.plot(corners[:,0], corners[:,1], 'k')
-        plt.pcolormesh(X,Y, np.abs(DOS_e_up.T), cmap='Blues')
+        plt.ylabel("k_y")
+        plt.xlabel("k_x")
+        plt.title("Im " + txt[i])
+        plt.subplot(2,3,i+4)
+        plt.ylabel("k_y")
+        plt.xlabel("k_x")
+        plt.pcolormesh(X,Y, np.abs(np.real(F[i])).T, vmin=0, vmax=max_F_real)
         plt.gca().set_aspect('equal')
-        plt.colorbar()
-        plt.xlabel("$k_x$")
-        plt.ylabel("$k_y$")
-        plt.title(r"Fermi surface, electron $\uparrow$ density")
+        plt.title("Re " + txt[i])
+    fig.set_size_inches(12, 8)
+    fig.text(0.062, 0.95, textstr, fontsize=14,
+    verticalalignment='top', bbox=props)
+    plt.tight_layout()
+    fig.savefig(dirname+"/F_triplet_elements_d1-{:n}_d2-{:n}_d3-{:n}_d4-{:n}_eta-{:n}.png".format(SC_Delta1*1e3, SC_Delta2*1e3, SC_Delta3*1e3, SC_Delta4*1e3, 1/eta), dpi=200)
 
-        plt.figure()
-        plt.imshow(color_spins_RGB(DOS_e_down, DOS_e_up))
-        plt.plot(N*(2*np.pi+corners[:,0])/(4*np.pi), N*(2*np.pi+corners[:,1])/(4*np.pi), 'w')
-        plt.title("Fermipinta, spinit")
+    fig = plt.figure()
+    F = [F_z2,F_x2,F_xy]
+    max_F_imag = np.max(np.imag(F))
+    max_F_real = np.max(np.real(F))
+    txt = [r"$F_{z^2\uparrow, z^2\downarrow}$", r"$F_{x^2-y^2\uparrow, x^2-y^2\downarrow}$", r"$F_{xy\uparrow, xy\downarrow}$"]
+    for i in range(3):
+        plt.subplot(2,3,i+1)
+        plt.pcolormesh(X,Y, np.abs(np.imag(F[i])).T, vmin=0, vmax=max_F_imag)
+        plt.gca().set_aspect('equal')
+        plt.ylabel("k_y")
+        plt.xlabel("k_x")
+        plt.title("Im " + txt[i])
+        plt.subplot(2,3,i+4)
+        plt.ylabel("k_y")
+        plt.xlabel("k_x")
+        plt.pcolormesh(X,Y, np.abs(np.real(F[i])).T, vmin=0, vmax=max_F_real)
+        plt.gca().set_aspect('equal')
+        plt.title("Re " + txt[i])
+    fig.set_size_inches(12, 8)
+    fig.text(0.062, 0.95, textstr, fontsize=14,
+    verticalalignment='top', bbox=props)
+    plt.tight_layout()
+    fig.savefig(dirname+"/F_singlet_elements_d1-{:n}_d2-{:n}_d3-{:n}_d4-{:n}_eta-{:n}.png".format(SC_Delta1*1e3, SC_Delta2*1e3, SC_Delta3*1e3, SC_Delta4*1e3, 1/eta), dpi=200)
 
-        fig = plt.gcf()
-        fig.set_size_inches(8, 8)
-        plt.gca().text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=14,
-        verticalalignment='top', bbox=props)
-        fig.savefig(dirname+"/surf_spins_d1-{:n}_d2-{:n}_d3-{:n}_eta-{:n}.png".format(SC_Delta1*1e3, SC_Delta2*1e3, SC_Delta3*1e3, 1/eta), dpi=200)
-
-
-        fig = plt.figure()
-        F = [F_z2_uu,F_x2_uu,F_xy_uu]
-        max_F_imag = np.max(np.imag(F))
-        max_F_real = np.max(np.real(F))
-        txt = [r"$F_{z^2\uparrow, z^2\uparrow}$", r"$F_{x^2-y^2\uparrow, x^2-y^2\uparrow}$", r"$F_{xy\uparrow, xy\uparrow}$"]
-        for i in range(3):
-            plt.subplot(2,3,i+1)
-            plt.pcolormesh(X,Y, np.abs(np.imag(F[i])).T, vmin=0, vmax=max_F_imag)
-            plt.gca().set_aspect('equal')
-            plt.ylabel("k_y")
-            plt.xlabel("k_x")
-            plt.title("Im " + txt[i])
-            plt.subplot(2,3,i+4)
-            plt.ylabel("k_y")
-            plt.xlabel("k_x")
-            plt.pcolormesh(X,Y, np.abs(np.real(F[i])).T, vmin=0, vmax=max_F_real)
-            plt.gca().set_aspect('equal')
-            plt.title("Re " + txt[i])
-        fig.set_size_inches(12, 8)
-        fig.text(0.062, 0.95, textstr, fontsize=14,
-        verticalalignment='top', bbox=props)
-        plt.tight_layout()
-        fig.savefig(dirname+"/F_triplet_elements_d1-{:n}_d2-{:n}_d3-{:n}_eta-{:n}.png".format(SC_Delta1*1e3, SC_Delta2*1e3, SC_Delta3*1e3, 1/eta), dpi=200)
-
-        fig = plt.figure()
-        F = [F_z2,F_x2,F_xy]
-        max_F_imag = np.max(np.imag(F))
-        max_F_real = np.max(np.real(F))
-        txt = [r"$F_{z^2\uparrow, z^2\downarrow}$", r"$F_{x^2-y^2\uparrow, x^2-y^2\downarrow}$", r"$F_{xy\uparrow, xy\downarrow}$"]
-        for i in range(3):
-            plt.subplot(2,3,i+1)
-            plt.pcolormesh(X,Y, np.abs(np.imag(F[i])).T, vmin=0, vmax=max_F_imag)
-            plt.gca().set_aspect('equal')
-            plt.ylabel("k_y")
-            plt.xlabel("k_x")
-            plt.title("Im " + txt[i])
-            plt.subplot(2,3,i+4)
-            plt.ylabel("k_y")
-            plt.xlabel("k_x")
-            plt.pcolormesh(X,Y, np.abs(np.real(F[i])).T, vmin=0, vmax=max_F_real)
-            plt.gca().set_aspect('equal')
-            plt.title("Re " + txt[i])
-        fig.set_size_inches(12, 8)
-        fig.text(0.062, 0.95, textstr, fontsize=14,
-        verticalalignment='top', bbox=props)
-        plt.tight_layout()
-        fig.savefig(dirname+"/F_singlet_elements_d1-{:n}_d2-{:n}_d3-{:n}_eta-{:n}.png".format(SC_Delta1*1e3, SC_Delta2*1e3, SC_Delta3*1e3, 1/eta), dpi=200)
-
-        plt.close('all')
 
     plt.show()
 

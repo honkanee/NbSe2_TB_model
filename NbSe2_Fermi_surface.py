@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 from Hamilton_NbSe2 import Hamilton_MoS2
 import os
 
-N = 3000 # Grid size
+N = 1000 # Grid size NxN
 E0 = 0 # Energy level
-eta = 0.001 # eta for calculation of Green's function
+eta = 0.005 # eta for calculation of Green's function
 
 SC_Delta1 = 0.01 # singlet pairing in the d_z^2
 SC_Delta2 = 0.01 # singlet pairing in the in-plane orbitals (d_x^2−y^2 and d_xy)

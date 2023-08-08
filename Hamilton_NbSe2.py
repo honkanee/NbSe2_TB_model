@@ -1,5 +1,15 @@
 """
 Implementation of TB Hamiltonian for MoS2 and NbSe2 including SOC and SC
+
+Based on papers:
+Cappelluti, E. et al. “Tight-Binding Model and Direct-Gap/indirect-Gap Transition in Single-Layer and Multilayer MoS.” 
+Physical review. B, Condensed matter and materials physics 88.7 (2013)
+
+Roldán, R et al. “Momentum Dependence of Spin-Orbit Interaction Effects in Single-Layer and Multi-Layer Transition Metal Dichalcogenides.” 
+2d materials 1.3 (2014)
+
+Margalit, Gilad, Erez Berg, and Yuval Oreg. “Theory of Multi-Orbital Topological Superconductivity in Transition Metal Dichalcogenides.” 
+Annals of physics 435 (2021)
 """
 
 import numpy as np

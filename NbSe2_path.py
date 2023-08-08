@@ -246,9 +246,6 @@ def main():
     plt.scatter(M[0], M[1], marker="o", label="M")
     plt.scatter(K[0], K[1], marker="o", label="K")
     plt.legend()
-    #plt.scatter(k_values[315,0], k_values[315,1], marker='o')
-    #plt.scatter(k_values[947,0], k_values[947,1], marker='o')
-    #plt.scatter(k_values[1316,0], k_values[1316,1], marker='o')
     plt.gca().set_aspect('equal')
 
     plt.show()

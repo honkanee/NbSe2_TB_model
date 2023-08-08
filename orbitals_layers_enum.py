@@ -1,5 +1,5 @@
 """
-Enum class to help indexing of 132x132 matrices in the NbSe2-MoS2-NbSe2 case
+Enum class to help to index 132x132 matrices in the NbSe2-MoS2-NbSe2 case
 """
 
 from enum import Enum
